@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru" >
+raw
+<style type="text/css">
+
+    body {
+      font-family: Helvetica Neue, Arial, sans-serif;
+    }
+  
+    polygon {
+      
+      fill: #42b983;
+      opacity: 0.75;
+    }
+  
+    circle {
+      
+      fill: transparent;
+      stroke: #999;
+    }
+  
+    text {
+      font-family: Helvetica Neue, Arial, sans-serif;
+      font-size: 10px;
+      fill: #666;
+    }
+  
+    label {
+      display: inline-block;
+      margin-bottom: 10px;
+      margin-left: 10px;
+      width: 120px;
+    }
+  
+    #raw {
+      
+      position: absolute;
+      top: 0;
+      left: 370px;
+    }
+
+    pre {
+        border-style: groove;
+        border-color: greenyellow;
+        color: red;
+        position: left;
+        margin-left: 100px;
+    }
+
+  </style>
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Колесо баланса на Vue.js</title>
+
+  <body>
+    <div id="demo">
+      <svg width="250" height="250">
+        <polygraph :stats="stats"></polygraph>
+      </svg>
+
+      <!-- управление колесом баланса -->
+      <div v-for="stat in stats">
+        <!-- выводим название элемента -->
+        <label>{{stat.label}}</label>
+        <!-- показываем шкалу -->
+        <input type="range" v-model="stat.value" min="0" max="100" />
+        <!-- выводим текущее значение элемента -->
+        <span>{{stat.value}}</span>
+        <!-- кнопка для удаления элемента -->
+        <button @click="remove(stat)" class="remove">Удалить</button>
+      </div>
+
+      <!-- форма для добавления нового элемента на колесо баланса -->
+      <form id="add">
+        <!-- поле ввода -->
+        <input name="newlabel" v-model="newLabel" />
+        <!-- кнопка -->
+        <button @click="add">Добавить направление</button>
+      </form>
+
+      <!-- выводим сбоку все элементы и их значения -->
+      <!-- <pre id="raw">{{ stats }}</pre> -->
+    </div>
+    <!-- подключаем Vue.js -->
+    <script src="https://unpkg.com/vue@2"></script>
+    <!-- шаблон для каждого элемента колеса баланса -->
+    <script type="text/x-template" id="polygraph-template">
+        <!-- используем этот тег для группировки SVG-элементов -->
+        <g>
+        <!-- внутри — обычный HTML, где мы задаём параметры многоугольника -->
+        <polygon :points="points"></polygon>
+        <!-- параметры круга -->
+        <circle cx="100" cy="100" r="80"></circle>
+        <!-- параметры размещения элементов -->
+        <axis-label
+            v-for="(stat, index) in stats"
+            :stat="stat"
+            :index="index"
+            :total="stats.length">
+        </axis-label>
+        </g>
+    </script>
+    
+    <!-- шаблон для подписи каждого элемента в колесе баланса -->
+    <script type="text/x-template" id="axis-label-template">
+        <!-- координаты зависят от координат соответствующей точки многоугольника -->
+        <text :x="point.x" :y="point.y">{{stat.label}}</text>
+    </script>
+
+    <script>
+        // элементы на старте
+        var stats = [
+          { label: "Карьера", value: 60 },
+          { label: "Саморазвитие", value: 100 },
+          { label: "Друзья", value: 50 },
+          { label: "Здоровье", value: 40 },
+          { label: "Деньги", value: 20 },          
+          { label: "Семья", value: 20 }
+        ];
+      
+        // создаём новый компонент Vie.js для отрисовки многоугольника
+        Vue.component("polygraph", {
+          props: ["stats"],
+          // используем шаблон
+          template: "#polygraph-template",
+          // раздел с вычисляемыми значениями
+          computed: {
+            // получаем положение каждой вершины многоугольника
+            points: function() {
+              var total = this.stats.length;
+              return this.stats
+                .map(function(stat, i) {
+                  // пересчитываем значение элемента в круговые координаты
+                  var point = valueToPoint(stat.value, i, total);
+                  return point.x + "," + point.y;
+                })
+                .join(" ");
+            }
+          },
+      
+          // внутренние компоненты
+          components: {
+            // описываем характеристики и поведение надписей на колесе баланса
+            "axis-label": {
+              props: {
+                stat: Object,
+                index: Number,
+                total: Number
+              },
+              // используем свой шаблон
+              template: "#axis-label-template",
+              computed: {
+                point: function() {
+                  return valueToPoint(
+                    // смещаем положение надписи на 10 пикселей, чтобы она не прилипала к вершинам многоугольника
+                    +this.stat.value + 10,
+                    this.index,
+                    this.total
+                  );
+                }
+              }
+            }
+          }
+        });
+      
+        // преобразовываем значение элемента в круговые координаты
+        function valueToPoint(value, index, total) {
+          var x = 0;
+          var y = -value * 0.8;
+          // находим угол
+          var angle = ((Math.PI * 2) / total) * index;
+          var cos = Math.cos(angle);
+          var sin = Math.sin(angle);
+          // используем тригонометрию и считаем координаты вершины многоугольника
+          var tx = x * cos - y * sin + 100;
+          var ty = x * sin + y * cos + 100;
+          return {
+            x: tx,
+            y: ty
+          };
+        }
+
+        function valueToPoint(value, index, total) {
+        var x = 0;
+        var y = -value * 0.8;
+        // находим угол
+        var angle = ((Math.PI * 2) / total) * index;
+        var cos = Math.cos(angle);
+        var sin = Math.sin(angle);
+        // используем тригонометрию и считаем координаты вершины многоугольника
+        var tx = x * cos - y * sin + 100;
+        var ty = x * sin + y * cos + 100;
+        return {
+            x: tx,
+            y: ty
+            };
+        }
+        // создаём новое приложение Vue.js
+        new Vue({
+        // привязываем его к блоку на странице по id
+        el: "#demo",
+        // стартовые значения приложения
+        data: {
+            newLabel: "",
+            stats: stats
+        },
+        // объявляем методы — что будет уметь наше приложение
+        methods: {
+            // добавить новый элемент
+            add: function(e) {
+            e.preventDefault();
+            // если не нажата кнопка «Добавить направление» — выходим из метода
+            if (!this.newLabel) return;
+            this.stats.push({
+                // иначе — добавляем новый элемент и присваиваем ему значение по умолчанию
+                label: this.newLabel,
+                value: 100
+            });
+            // очищаем поле ввода
+            this.newLabel = "";
+            },
+            // удалить элемент
+            remove: function(stat) {
+            // если элементов больше трёх
+            if (this.stats.length > 3) {
+                // удаляем выбранный
+                this.stats.splice(this.stats.indexOf(stat), 1);
+            } else {
+                // иначе выводим сообщение
+                alert("Должно остаться как минимум три направления");
+            }
+            }
+        }
+        });
+      </script>
+  </body>
+</html>
